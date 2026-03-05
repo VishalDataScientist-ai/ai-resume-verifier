@@ -8,6 +8,7 @@ import SignInPage from './components/SignInPage';
 import SignUpPage from './components/SignUpPage';
 import ProfilePage from './components/ProfilePage';
 import IdentityCamera from './components/IdentityCamera';
+import ForgotPasswordPage from './components/ForgotPasswordPage';
 import Footer from './components/Footer';
 import { ShieldCheck, LogOut, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -95,6 +96,7 @@ function App() {
             <Route path="/book-demo" element={<BookDemoPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Routes>
         </main>

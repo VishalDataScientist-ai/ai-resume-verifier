@@ -25,7 +25,7 @@ export default function SignInPage({ setUser }) {
             setUser({ email });
             navigate('/recruiter');
         } catch (err) {
-            setError(err.response?.data?.msg || 'Sign in failed. Please try again.');
+            setError(err.response?.data?.error || 'Sign in failed. Please check your credentials.');
         } finally {
             setLoading(false);
         }
@@ -80,6 +80,11 @@ export default function SignInPage({ setUser }) {
                                 placeholder="••••••••"
                                 required
                             />
+                        </div>
+                        <div className="flex justify-end mt-2">
+                            <Link to="/forgot-password" className="text-sm font-medium text-slate-400 hover:text-indigo-400 transition-colors">
+                                Forgot your password?
+                            </Link>
                         </div>
                     </div>
 

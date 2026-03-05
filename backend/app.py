@@ -9,6 +9,7 @@ from services.github_scanner import analyze_github_profile
 from services.linkedin_scanner import analyze_linkedin_profile
 from services.leetcode_scanner import analyze_leetcode_profile
 from services.scorer import calculate_authenticity
+import re
 
 # Import Layer 2 Dual-Layer Verification
 from core.identity_engine.aggregator import process_identity_video, calculate_final_trust_score
@@ -259,10 +260,14 @@ def create_app():
             if not email or not password:
                 return jsonify({"error": "Email and password are required"}), 400
                 
+            # Password Strength Validation (Min 8 chars, 1 letter, 1 number)
+            if len(password) < 8 or not re.search(r'[A-Za-z]', password) or not re.search(r'[0-9]', password):
+                return jsonify({"error": "Password must be at least 8 characters long and contain both letters and numbers."}), 400
+
             # Check if user already exists
             existing_user = User.query.filter_by(email=email).first()
             if existing_user:
-                return jsonify({"error": "An account with this email already exists"}), 409
+                return jsonify({"error": "This email is already used."}), 409
                 
             hashed_password = generate_password_hash(password)
             new_user = User(email=email, password_hash=hashed_password)
@@ -270,7 +275,7 @@ def create_app():
             db.session.add(new_user)
             db.session.commit()
             
-            return jsonify({"status": "success", "message": "Account created successfully", "user_id": new_user.id}), 201
+            return jsonify({"status": "success", "message": "Account created successfully", "user": new_user.to_dict(), "access_token": "dummy_token_for_now"}), 201
             
         except Exception as e:
             return jsonify({"error": str(e)}), 500
@@ -290,7 +295,7 @@ def create_app():
             if not user or not check_password_hash(user.password_hash, password):
                 return jsonify({"error": "Invalid email or password"}), 401
                 
-            return jsonify({"status": "success", "message": "Logged in successfully", "user": user.to_dict()}), 200
+            return jsonify({"status": "success", "message": "Logged in successfully", "user": user.to_dict(), "access_token": "dummy_token_for_now"}), 200
             
         except Exception as e:
             return jsonify({"error": str(e)}), 500
@@ -340,6 +345,32 @@ def create_app():
             db.session.commit()
             
             return jsonify({"status": "success"}), 200
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/forgot-password', methods=['POST'])
+    def forgot_password():
+        try:
+            data = request.json
+            email = data.get('email')
+            new_password = data.get('new_password')
+            
+            if not email or not new_password:
+                return jsonify({"error": "Email and new password are required"}), 400
+                
+            # Password Strength Validation (Min 8 chars, 1 letter, 1 number)
+            if len(new_password) < 8 or not re.search(r'[A-Za-z]', new_password) or not re.search(r'[0-9]', new_password):
+                return jsonify({"error": "Password must be at least 8 characters long and contain both letters and numbers."}), 400
+
+            user = User.query.filter_by(email=email).first()
+            if not user:
+                # Return generic error for security (optional) or let them know account doesn't exist
+                return jsonify({"error": "No account found with this email addres."}), 404
+                
+            user.password_hash = generate_password_hash(new_password)
+            db.session.commit()
+            
+            return jsonify({"status": "success", "message": "Password updated successfully"}), 200
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 

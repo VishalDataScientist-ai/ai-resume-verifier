@@ -14,6 +14,14 @@ export default function SignUpPage({ setUser }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        // Frontend Password Validation
+        const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+        if (!passwordRegex.test(password)) {
+            setError('Password must be at least 8 characters long and contain both letters and numbers.');
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -27,7 +35,7 @@ export default function SignUpPage({ setUser }) {
             setUser({ email });
             navigate('/recruiter');
         } catch (err) {
-            setError(err.response?.data?.msg || 'Sign up failed. Please try again.');
+            setError(err.response?.data?.error || 'Sign up failed. Please try again.');
         } finally {
             setLoading(false);
         }
