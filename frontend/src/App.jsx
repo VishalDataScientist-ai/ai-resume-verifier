@@ -12,6 +12,10 @@ import ForgotPasswordPage from './components/ForgotPasswordPage';
 import Footer from './components/Footer';
 import { ShieldCheck, LogOut, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import axios from 'axios';
+
+// Configure Axios to use the hosted backend URL if deployed
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || '';
 
 function App() {
   const [user, setUser] = useState(null);
