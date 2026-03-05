@@ -56,9 +56,9 @@ export default function Footer() {
                                 </Link>
                             </li>
                             <li>
-                                <a href="#" className="text-sm text-slate-400 hover:text-indigo-400 transition-colors inline-block hover:translate-x-1 transform duration-200">
+                                <Link to="/pricing" className="text-sm text-slate-400 hover:text-indigo-400 transition-colors inline-block hover:translate-x-1 transform duration-200">
                                     Pricing
-                                </a>
+                                </Link>
                             </li>
                         </ul>
                     </div>
@@ -95,19 +95,19 @@ export default function Footer() {
                         <h4 className="text-white font-semibold text-sm uppercase tracking-wider">Company</h4>
                         <ul className="flex flex-col gap-3">
                             <li>
-                                <a href="#" className="text-sm text-slate-400 hover:text-white transition-colors inline-block hover:translate-x-1 transform duration-200">
+                                <Link to="/about" className="text-sm text-slate-400 hover:text-white transition-colors inline-block hover:translate-x-1 transform duration-200">
                                     About Us
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="#" className="text-sm text-slate-400 hover:text-white transition-colors inline-block hover:translate-x-1 transform duration-200">
+                                <Link to="/privacy" className="text-sm text-slate-400 hover:text-white transition-colors inline-block hover:translate-x-1 transform duration-200">
                                     Privacy Policy
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="#" className="text-sm text-slate-400 hover:text-white transition-colors inline-block hover:translate-x-1 transform duration-200">
+                                <Link to="/terms" className="text-sm text-slate-400 hover:text-white transition-colors inline-block hover:translate-x-1 transform duration-200">
                                     Terms of Service
-                                </a>
+                                </Link>
                             </li>
                             <li>
                                 <a href="mailto:contact@nexusai.com" className="text-sm text-slate-400 hover:text-white transition-colors inline-flex items-center gap-2 hover:translate-x-1 transform duration-200 group">
