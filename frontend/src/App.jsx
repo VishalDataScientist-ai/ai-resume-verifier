@@ -8,6 +8,7 @@ import SignInPage from './components/SignInPage';
 import SignUpPage from './components/SignUpPage';
 import ProfilePage from './components/ProfilePage';
 import IdentityCamera from './components/IdentityCamera';
+import Footer from './components/Footer';
 import { ShieldCheck, LogOut, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -98,10 +99,8 @@ function App() {
           </Routes>
         </main>
 
-        {/* Footer */}
-        <footer className="w-full text-center py-8 text-slate-500 text-sm border-t border-white/5 mt-auto">
-          © {new Date().getFullYear()} Nexus AI Systems. YC S26.
-        </footer>
+        {/* Advanced Footer */}
+        <Footer />
       </div>
     </Router>
   );
