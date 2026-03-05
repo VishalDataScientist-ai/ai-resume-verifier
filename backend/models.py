@@ -128,3 +128,12 @@ class User(db.Model):
             'email': self.email,
             'created_at': self.created_at.isoformat()
         }
+
+class OTPRecord(db.Model):
+    __tablename__ = 'otps'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False)
+    otp_code = db.Column(db.String(6), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

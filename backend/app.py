@@ -2,13 +2,14 @@ import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import db, Candidate, DemoRequest, User, IdentityVerification
+from models import db, Candidate, DemoRequest, User, IdentityVerification, OTPRecord
 from config import Config
 from services.parser import analyze_resume
 from services.github_scanner import analyze_github_profile
-from services.linkedin_scanner import analyze_linkedin_profile
 from services.leetcode_scanner import analyze_leetcode_profile
 from services.scorer import calculate_authenticity
+from datetime import datetime, timedelta
+import random
 import re
 
 # Import Layer 2 Dual-Layer Verification
@@ -250,21 +251,66 @@ def create_app():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
+    @app.route('/api/request-otp', methods=['POST'])
+    def request_otp():
+        try:
+            data = request.json
+            email = data.get('email')
+            
+            if not email:
+                return jsonify({"error": "Email is required"}), 400
+                
+            # Check if user already exists
+            existing_user = User.query.filter_by(email=email).first()
+            if existing_user:
+                return jsonify({"error": "This email is already used."}), 409
+                
+            # Generate 6-digit OTP
+            otp_code = f"{random.randint(100000, 999999)}"
+            expiration = datetime.utcnow() + timedelta(minutes=10)
+            
+            # Store in DB (Overwriting old OTPs for that email)
+            existing_otp = OTPRecord.query.filter_by(email=email).first()
+            if existing_otp:
+                db.session.delete(existing_otp)
+                
+            new_otp = OTPRecord(email=email, otp_code=otp_code, expires_at=expiration)
+            db.session.add(new_otp)
+            db.session.commit()
+            
+            # Mock sending email (in production, use smtplib/SendGrid here)
+            print(f"\n[MOCK EMAIL SERVER] OTP for {email} is: {otp_code}\n")
+            
+            return jsonify({"status": "success", "message": "OTP sent to email"}), 200
+            
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
     @app.route('/api/signup', methods=['POST'])
     def signup():
         try:
             data = request.json
             email = data.get('email')
             password = data.get('password')
+            otp_attempt = data.get('otp')
             
-            if not email or not password:
-                return jsonify({"error": "Email and password are required"}), 400
+            if not email or not password or not otp_attempt:
+                return jsonify({"error": "Email, password, and OTP are required"}), 400
                 
             # Password Strength Validation (Min 8 chars, 1 letter, 1 number)
             if len(password) < 8 or not re.search(r'[A-Za-z]', password) or not re.search(r'[0-9]', password):
                 return jsonify({"error": "Password must be at least 8 characters long and contain both letters and numbers."}), 400
 
-            # Check if user already exists
+            # Verify OTP
+            otp_record = OTPRecord.query.filter_by(email=email, otp_code=otp_attempt).first()
+            
+            if not otp_record:
+                return jsonify({"error": "Invalid OTP code"}), 401
+                
+            if datetime.utcnow() > otp_record.expires_at:
+                return jsonify({"error": "OTP has expired. Please request a new one."}), 401
+                
+            # Check if user already exists (just in case they were fast)
             existing_user = User.query.filter_by(email=email).first()
             if existing_user:
                 return jsonify({"error": "This email is already used."}), 409
@@ -273,6 +319,7 @@ def create_app():
             new_user = User(email=email, password_hash=hashed_password)
             
             db.session.add(new_user)
+            db.session.delete(otp_record) # clear used OTP
             db.session.commit()
             
             return jsonify({"status": "success", "message": "Account created successfully", "user": new_user.to_dict(), "access_token": "dummy_token_for_now"}), 201
@@ -378,4 +425,6 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
+    with app.app_context():
+        db.create_all()
     app.run(debug=True, port=5001)

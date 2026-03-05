@@ -1,19 +1,23 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { Mail, Lock, ArrowRight, UserPlus, User } from 'lucide-react';
+import { Mail, Lock, ArrowRight, UserPlus, User, KeyRound } from 'lucide-react';
 
 export default function SignUpPage({ setUser }) {
+    const [step, setStep] = useState(1);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [otp, setOtp] = useState('');
     const [error, setError] = useState('');
+    const [successMsg, setSuccessMsg] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleSubmit = async (e) => {
+    const handleRequestOTP = async (e) => {
         e.preventDefault();
         setError('');
+        setSuccessMsg('');
 
         // Frontend Password Validation
         const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
@@ -22,20 +26,48 @@ export default function SignUpPage({ setUser }) {
             return;
         }
 
+        if (!name || !email || !password) {
+            setError('Please fill in all fields.');
+            return;
+        }
+
         setLoading(true);
+        try {
+            const res = await axios.post('/api/request-otp', { email });
+            setSuccessMsg(res.data.message || 'OTP sent to your email!');
+            setStep(2);
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to send OTP. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerifyAndSignup = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSuccessMsg('');
+        setLoading(true);
+
+        if (!otp) {
+            setError('Please enter the 6-digit OTP.');
+            setLoading(false);
+            return;
+        }
 
         try {
             const res = await axios.post('/api/signup', {
                 name,
                 email,
-                password
+                password,
+                otp
             });
             localStorage.setItem('token', res.data.access_token);
             localStorage.setItem('user', JSON.stringify({ email }));
             setUser({ email });
             navigate('/recruiter');
         } catch (err) {
-            setError(err.response?.data?.error || 'Sign up failed. Please try again.');
+            setError(err.response?.data?.error || 'Sign up failed. Please check your OTP.');
         } finally {
             setLoading(false);
         }
@@ -62,61 +94,112 @@ export default function SignUpPage({ setUser }) {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-300 ml-1">Full Name</label>
-                        <div className="relative group">
-                            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
-                            <input
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all font-medium"
-                                placeholder="Elon Musk"
-                            />
-                        </div>
+                {successMsg && (
+                    <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/50 text-emerald-400 text-sm text-center font-medium">
+                        {successMsg}
                     </div>
+                )}
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-300 ml-1">Email Address</label>
-                        <div className="relative group">
-                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all font-medium"
-                                placeholder="you@company.com"
-                                required
-                            />
+                {step === 1 ? (
+                    <form onSubmit={handleRequestOTP} className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-300 ml-1">Full Name</label>
+                            <div className="relative group">
+                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
+                                <input
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all font-medium"
+                                    placeholder="Elon Musk"
+                                />
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-300 ml-1">Password</label>
-                        <div className="relative group">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all font-medium"
-                                placeholder="••••••••"
-                                required
-                            />
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-300 ml-1">Email Address</label>
+                            <div className="relative group">
+                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all font-medium"
+                                    placeholder="you@company.com"
+                                    required
+                                />
+                            </div>
                         </div>
-                    </div>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="btn-primary-3d w-full py-4 rounded-xl flex items-center justify-center gap-2 group mt-8 text-base font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 border-none before:hidden"
-                        style={{ boxShadow: '0 0 20px rgba(16,185,129,0.3)' }}
-                    >
-                        {loading ? 'Creating Account...' : 'Continue'}
-                        {!loading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
-                    </button>
-                </form>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-300 ml-1">Password</label>
+                            <div className="relative group">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all font-medium"
+                                    placeholder="••••••••"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="btn-primary-3d w-full py-4 rounded-xl flex items-center justify-center gap-2 group mt-8 text-base font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 border-none before:hidden"
+                            style={{ boxShadow: '0 0 20px rgba(16,185,129,0.3)' }}
+                        >
+                            {loading ? 'Sending Request...' : 'Continue'}
+                            {!loading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+                        </button>
+                    </form>
+                ) : (
+                    <form onSubmit={handleVerifyAndSignup} className="space-y-6">
+                        <div className="space-y-2 text-center mb-6">
+                            <p className="text-sm text-slate-300">
+                                We've sent a 6-digit verification code to <br />
+                                <span className="font-bold text-emerald-400">{email}</span>
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-300 ml-1">Verification Code</label>
+                            <div className="relative group">
+                                <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
+                                <input
+                                    type="text"
+                                    value={otp}
+                                    onChange={(e) => setOtp(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all font-medium tracking-[0.5em] text-center text-lg"
+                                    placeholder="------"
+                                    maxLength={6}
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="btn-primary-3d w-full py-4 rounded-xl flex items-center justify-center gap-2 group mt-8 text-base font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 border-none before:hidden"
+                            style={{ boxShadow: '0 0 20px rgba(16,185,129,0.3)' }}
+                        >
+                            {loading ? 'Verifying...' : 'Create Account'}
+                            {!loading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => { setStep(1); setOtp(''); setError(''); setSuccessMsg(''); }}
+                            className="w-full py-3 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                        >
+                            &larr; Back to details
+                        </button>
+                    </form>
+                )}
 
                 <div className="mt-8 text-center">
                     <p className="text-slate-400 text-sm font-medium">
