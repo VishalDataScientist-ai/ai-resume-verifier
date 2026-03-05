@@ -11,9 +11,50 @@ from services.scorer import calculate_authenticity
 from datetime import datetime, timedelta
 import random
 import re
+import os
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Import Layer 2 Dual-Layer Verification
 from core.identity_engine.aggregator import process_identity_video, calculate_final_trust_score
+
+def send_otp_email(receiver_email, otp_code):
+    sender_email = os.environ.get('MAIL_USERNAME')
+    sender_password = os.environ.get('MAIL_PASSWORD')
+    
+    if not sender_email or not sender_password:
+        print(f"WARNING: Email credentials not set. Mocking email: OTP for {receiver_email} is {otp_code}")
+        return False # Fall back to returning success so the frontend doesn't break during local testing without credentials
+        
+    message = MIMEMultipart("alternative")
+    message["Subject"] = "Your Verification Code - Nexus AI"
+    message["From"] = sender_email
+    message["To"] = receiver_email
+    
+    text = f"""\
+    Hello!
+    
+    Your verification code for Nexus AI account creation is: {otp_code}
+    
+    This code will expire in 10 minutes.
+    
+    If you did not request this code, please ignore this email.
+    """
+    
+    part1 = MIMEText(text, "plain")
+    message.attach(part1)
+    
+    try:
+        # Using Gmail's SMTP server by default. (Requires an "App Password" if 2FA is enabled)
+        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, receiver_email, message.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Error dropping email: {e}")
+        return False
 
 def create_app():
     app = Flask(__name__)
@@ -278,10 +319,15 @@ def create_app():
             db.session.add(new_otp)
             db.session.commit()
             
-            # Mock sending email (in production, use smtplib/SendGrid here)
-            print(f"\n[MOCK EMAIL SERVER] OTP for {email} is: {otp_code}\n")
+            # Send the actual email
+            email_sent = send_otp_email(email, otp_code)
             
-            return jsonify({"status": "success", "message": "OTP sent to email"}), 200
+            if email_sent:
+                return jsonify({"status": "success", "message": "OTP sent to your email!"}), 200
+            else:
+                # If email failed (e.g. invalid credentials), we still return success for local testing purposes to not break the UI flow, 
+                # but in production you might want to return a 500 error here.
+                return jsonify({"status": "warning", "message": "OTP generated locally (check console), email not configured."}), 200
             
         except Exception as e:
             return jsonify({"error": str(e)}), 500
