@@ -57,20 +57,20 @@ def send_otp_email(receiver_email, otp_code):
         return False
 
 def create_app():
-    app = Flask(__name__)
-    app.config.from_object(Config)
+    new_app = Flask(__name__)
+    new_app.config.from_object(Config)
     
-    CORS(app)
-    db.init_app(app)
+    CORS(new_app)
+    db.init_app(new_app)
     
-    with app.app_context():
+    with new_app.app_context():
         db.create_all()
         
-    @app.route('/health', methods=['GET'])
+    @new_app.route('/health', methods=['GET'])
     def health_check():
         return jsonify({"status": "healthy"})
 
-    @app.route('/api/analyze', methods=['POST'])
+    @new_app.route('/api/analyze', methods=['POST'])
     def analyze_candidate():
         try:
             name = request.form.get('name', '')
@@ -167,17 +167,17 @@ def create_app():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/candidates', methods=['GET'])
+    @new_app.route('/api/candidates', methods=['GET'])
     def get_candidates():
         candidates = Candidate.query.order_by(Candidate.authenticity_score.desc()).all()
         return jsonify([c.to_dict() for c in candidates]), 200
 
-    @app.route('/api/candidates/<int:candidate_id>', methods=['GET'])
+    @new_app.route('/api/candidates/<int:candidate_id>', methods=['GET'])
     def get_candidate(candidate_id):
         candidate = Candidate.query.get_or_404(candidate_id)
         return jsonify(candidate.to_dict()), 200
 
-    @app.route('/api/candidates/<int:candidate_id>/resume_download', methods=['GET'])
+    @new_app.route('/api/candidates/<int:candidate_id>/resume_download', methods=['GET'])
     def download_resume(candidate_id):
         candidate = Candidate.query.get_or_404(candidate_id)
         if not candidate.cv_raw_document:
@@ -198,7 +198,7 @@ def create_app():
             download_name=filename
         )
 
-    @app.route('/api/verify-identity', methods=['POST'])
+    @new_app.route('/api/verify-identity', methods=['POST'])
     def verify_identity():
         try:
             candidate_id = request.form.get('candidate_id')
@@ -263,7 +263,7 @@ def create_app():
             db.session.rollback()
             return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/demo', methods=['POST'])
+    @new_app.route('/api/demo', methods=['POST'])
     def request_demo():
         try:
             data = request.json
@@ -292,7 +292,7 @@ def create_app():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/request-otp', methods=['POST'])
+    @new_app.route('/api/request-otp', methods=['POST'])
     def request_otp():
         try:
             data = request.json
@@ -332,7 +332,7 @@ def create_app():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/signup', methods=['POST'])
+    @new_app.route('/api/signup', methods=['POST'])
     def signup():
         try:
             data = request.json
@@ -373,7 +373,7 @@ def create_app():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/login', methods=['POST'])
+    @new_app.route('/api/login', methods=['POST'])
     def login():
         try:
             data = request.json
@@ -393,7 +393,7 @@ def create_app():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/user/update', methods=['POST'])
+    @new_app.route('/api/user/update', methods=['POST'])
     def update_user():
         try:
             data = request.json
@@ -419,7 +419,7 @@ def create_app():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/user/password', methods=['POST'])
+    @new_app.route('/api/user/password', methods=['POST'])
     def update_password():
         try:
             data = request.json
@@ -441,7 +441,7 @@ def create_app():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/forgot-password', methods=['POST'])
+    @new_app.route('/api/forgot-password', methods=['POST'])
     def forgot_password():
         try:
             data = request.json
@@ -467,10 +467,12 @@ def create_app():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    return app
+    return new_app
+
+# Initialize the app for Gunicorn
+app = create_app()
 
 if __name__ == '__main__':
-    app = create_app()
-    with app.app_context():
+    with new_app.app_context():
         db.create_all()
     app.run(debug=True, port=5001)
