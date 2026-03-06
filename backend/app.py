@@ -47,7 +47,7 @@ def send_otp_email(receiver_email, otp_code):
     
     try:
         # Using Gmail's SMTP server by default. (Requires an "App Password" if 2FA is enabled)
-        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+        server = smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10)
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, receiver_email, message.as_string())
         server.quit()
