@@ -15,7 +15,14 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 
 // Configure Axios to use the hosted backend URL if deployed
-axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || '';
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
+if (apiUrl) {
+  // Strip trailing slash if present
+  axios.defaults.baseURL = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+  console.log("Nexus AI Backend Configured:", axios.defaults.baseURL);
+} else {
+  axios.defaults.baseURL = ''; // Falls back to vite proxy in local dev
+}
 
 function App() {
   const [user, setUser] = useState(null);
